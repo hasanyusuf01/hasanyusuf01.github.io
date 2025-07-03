@@ -252,8 +252,8 @@ class Portfolio {
                 outcome: 'Created a comprehensive learning resource demonstrating proficiency in multiple technical domains.'
             },
             'und-assessment': {
-                title: 'UND Assessment System',
-                description: 'Advanced assessment and evaluation system developed during University of Waterloo internship, focusing on automated evaluation and data analysis capabilities.',
+                title: 'Drone-Nav-Agent',
+                description: 'The Drone-Nav-Agent system is a Deep Deterministic Policy Gradient (DDPG) reinforcement learning framework designed for training agents to navigate in a 2D point particle environment. The system provides a complete end-to-end pipeline for DDPG-based continuous control learning, including environment simulation, agent training, comprehensive data logging, and trajectory analysis.',
                 technologies: ['Python', 'Jupyter Notebook', 'Data Analysis', 'Statistical Methods', 'Machine Learning', 'Assessment Algorithms'],
                 features: [
                     'Automated assessment algorithms',
