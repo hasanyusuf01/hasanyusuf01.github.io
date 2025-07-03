@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Portfolio</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>YUSUF HASAN</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#home" class="nav-link" data-section="home">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#projects" class="nav-link" data-section="projects">Projects</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#research" class="nav-link" data-section="research">Research</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#journey" class="nav-link" data-section="journey">Journey</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#contact" class="nav-link" data-section="contact">Contact</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#certificates" class="nav-link" data-section="certificates">Certificates</a>
+                </li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Section -->
+        <section id="home" class="section active">
+            <div class="container">
+                <div class="intro-content">
+                    <div class="intro-text">
+                        <h1 class="intro-title">Hello, I'm YUSUF HASAN</h1>
+                        <p class="intro-description">
+                            Computer Engineering student at Zakir Husain College of Engineering and Technology, AMU. 
+                            Specializing in Machine Learning, Deep Learning, Robotics, and Computer Vision with extensive research experience 
+                            through international internships at University of Waterloo, IIT Jodhpur, and University of Buckingham.
+                            Published researcher with 8 papers and 12 citations in top-tier venues.
+                        </p>
+                        
+                        <!-- Achievements Section -->
+                        <div class="achievements-section">
+                            <h3 class="achievements-title">Key Achievements</h3>
+                            <div class="achievements-grid">
+                                <div class="achievement-item">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    <span>8 Research Publications</span>
+                                </div>
+                                <div class="achievement-item">
+                                    <i class="fas fa-quote-left"></i>
+                                    <span>12 Citations</span>
+                                </div>
+                                <div class="achievement-item">
+                                    <i class="fas fa-university"></i>
+                                    <span>3 International Internships</span>
+                                </div>
+                                <div class="achievement-item">
+                                    <i class="fas fa-code"></i>
+                                    <span>6+ Major Projects</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="intro-buttons">
+                            <button class="btn btn-primary" onclick="downloadResume()">
+                                <i class="fas fa-download"></i> Download Resume
+                            </button>
+                            <button class="btn btn-secondary" onclick="viewCertificates()">
+                                <i class="fas fa-certificate"></i> View Certificates
+                            </button>
+                            <div class="social-links">
+                                <a href="https://github.com/hasanyusuf01" target="_blank" class="social-link">
+                                    <i class="fab fa-github"></i>
+                                </a>
+                                <a href="https://www.linkedin.com/in/yusufhasan16/" target="_blank" class="social-link">
+                                    <i class="fab fa-linkedin"></i>
+                                </a>
+                                <a href="https://instagram.com/yourusername" target="_blank" class="social-link">
+                                    <i class="fab fa-instagram"></i>
+                                </a>
+                                <a href="mailto:zhcet.ac.in" class="social-link">
+                                    <i class="fas fa-envelope"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="intro-image">
+                        <div class="profile-placeholder">
+                            <i class="fas fa-user fa-8x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects" class="section">
+            <div class="container">
+                <h2 class="section-title">Projects</h2>
+                <div class="projects-grid">
+                    <div class="project-card" data-project="rovc">
+                        <div class="card-header">
+                            <h3>ROVC2.0 - Remotely Operated Vehicle</h3>
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <p class="card-preview">Complete ROV system with object detection algorithms, GUI, thrusters code, IMU and pressure sensor calibration</p>
+                        <div class="card-footer">
+                            <span class="tech-tag">Python</span>
+                            <span class="tech-tag">Computer Vision</span>
+                            <span class="tech-tag">Robotics</span>
+                        </div>
+                    </div>
+
+                    <div class="project-card" data-project="stewart-platform">
+                        <div class="card-header">
+                            <h3>Stewart Platform - 6DoF Parallel Robot</h3>
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <p class="card-preview">Custom multi-modal neural networks for predicting 6 Degrees of Freedom in parallel robot systems</p>
+                        <div class="card-footer">
+                            <span class="tech-tag">Neural Networks</span>
+                            <span class="tech-tag">Robotics</span>
+                            <span class="tech-tag">Machine Learning</span>
+                        </div>
+                    </div>
+
+                    <div class="project-card" data-project="ni3d">
+                        <div class="card-header">
+                            <h3>Ni3D - 3D Reconstruction</h3>
+                            <i class="fas fa-cube"></i>
+                        </div>
+                        <p class="card-preview">Photogrammetry-based low-cost 3D reconstruction model for creating accurate 3D models</p>
+                        <div class="card-footer">
+                            <span class="tech-tag">Python</span>
+                            <span class="tech-tag">Computer Vision</span>
+                            <span class="tech-tag">3D Modeling</span>
+                        </div>
+                    </div>
+
+                    <div class="project-card" data-project="codes-collection">
+                        <div class="card-header">
+                            <h3>ML/DL Projects Collection</h3>
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <p class="card-preview">Comprehensive collection of machine learning, deep learning, signal processing and image processing projects</p>
+                        <div class="card-footer">
+                            <span class="tech-tag">Machine Learning</span>
+                            <span class="tech-tag">Deep Learning</span>
+                            <span class="tech-tag">Signal Processing</span>
+                        </div>
+                    </div>
+
+                    <div class="project-card" data-project="und-assessment">
+                        <div class="card-header">
+                            <h3>UND Assessment System</h3>
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <p class="card-preview">Advanced assessment and evaluation system developed during University of Waterloo internship</p>
+                        <div class="card-footer">
+                            <span class="tech-tag">Python</span>
+                            <span class="tech-tag">Data Analysis</span>
+                            <span class="tech-tag">Assessment</span>
+                        </div>
+                    </div>
+
+                    <div class="project-card" data-project="webhook-system">
+                        <div class="card-header">
+                            <h3>Webhook Integration System</h3>
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <p class="card-preview">Real-time webhook system for automated data processing and integration</p>
+                        <div class="card-footer">
+                            <span class="tech-tag">HTML</span>
+                            <span class="tech-tag">Web APIs</span>
+                            <span class="tech-tag">Integration</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Research Section -->
+        <section id="research" class="section">
+            <div class="container">
+                <h2 class="section-title">Research Publications</h2>
+                <div class="research-grid">
+                    <div class="research-card" data-research="neural-anomaly">
+                        <div class="card-header">
+                            <h3>Neural Network Based Anomaly Detection Method for Network Datasets</h3>
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <p class="card-preview">Advanced neural network approach for detecting anomalies in network security datasets</p>
+                        <div class="card-footer">
+                            <span class="venue-tag">Authorea Preprints</span>
+                            <span class="year-tag">2024</span>
+                            <span class="citation-tag">5 citations</span>
+                        </div>
+                    </div>
+
+                    <div class="research-card" data-research="damage-localization">
+                        <div class="card-header">
+                            <h3>Hybrid Neural Network Method for Damage Localization in Structural Health Monitoring</h3>
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <p class="card-preview">Innovative approach using hybrid neural networks for structural damage detection and localization</p>
+                        <div class="card-footer">
+                            <span class="venue-tag">Scientific Reports</span>
+                            <span class="year-tag">2025</span>
+                            <span class="citation-tag">2 citations</span>
+                        </div>
+                    </div>
+
+                    <div class="research-card" data-research="auv-software">
+                        <div class="card-header">
+                            <h3>Design and Implementation of Autonomous Underwater Vehicles' Software Stack</h3>
+                            <i class="fas fa-water"></i>
+                        </div>
+                        <p class="card-preview">Comprehensive software architecture for autonomous underwater vehicle systems</p>
+                        <div class="card-footer">
+                            <span class="venue-tag">IEEE Conference</span>
+                            <span class="year-tag">2023</span>
+                            <span class="citation-tag">2 citations</span>
+                        </div>
+                    </div>
+
+                    <div class="research-card" data-research="microcrack-detection">
+                        <div class="card-header">
+                            <h3>MCMN Deep Learning Model for Precise Microcrack Detection</h3>
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <p class="card-preview">Advanced deep learning model for detecting microcracks in various materials using computer vision</p>
+                        <div class="card-footer">
+                            <span class="venue-tag">IEEE ICMLA</span>
+                            <span class="year-tag">2024</span>
+                            <span class="citation-tag">1 citation</span>
+                        </div>
+                    </div>
+
+                    <div class="research-card" data-research="wave-neural-network">
+                        <div class="card-header">
+                            <h3>Wave-Based Neural Network with Attention Mechanism</h3>
+                            <i class="fas fa-wave-square"></i>
+                        </div>
+                        <p class="card-preview">Novel neural network architecture with attention mechanism for damage localization in materials</p>
+                        <div class="card-footer">
+                            <span class="venue-tag">IEEE ICMLA</span>
+                            <span class="year-tag">2024</span>
+                            <span class="citation-tag">1 citation</span>
+                        </div>
+                    </div>
+
+                    <div class="research-card" data-research="underwater-enhancement">
+                        <div class="card-header">
+                            <h3>Real-time Underwater Video Feed Enhancement for AUV</h3>
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <p class="card-preview">Real-time video enhancement techniques for autonomous underwater vehicles</p>
+                        <div class="card-footer">
+                            <span class="venue-tag">SPIE Conference</span>
+                            <span class="year-tag">2024</span>
+                            <span class="citation-tag">1 citation</span>
+                        </div>
+                    </div>
+
+                    <div class="research-card" data-research="microcrack-attention">
+                        <div class="card-header">
+                            <h3>MicrocrackAttentionNext: Feature Visualization in Deep Neural Networks</h3>
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <p class="card-preview">Advanced microcrack detection using deep neural networks with feature visualization</p>
+                        <div class="card-footer">
+                            <span class="venue-tag">Sensors Journal</span>
+                            <span class="year-tag">2025</span>
+                            <span class="citation-tag">New</span>
+                        </div>
+                    </div>
+
+                    <div class="research-card" data-research="keypoint-localization">
+                        <div class="card-header">
+                            <h3>Deep Learning for Micro-Scale Crack Detection on Imbalanced Datasets</h3>
+                            <i class="fas fa-crosshairs"></i>
+                        </div>
+                        <p class="card-preview">Key point localization approach for detecting micro-scale cracks in imbalanced datasets</p>
+                        <div class="card-footer">
+                            <span class="venue-tag">arXiv Preprint</span>
+                            <span class="year-tag">2024</span>
+                            <span class="citation-tag">Under Review</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Journey Section -->
+        <section id="journey" class="section">
+            <div class="container">
+                <h2 class="section-title">My Journey</h2>
+                <div class="timeline">
+                    <div class="timeline-item" data-journey="education">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h3>B.Tech Computer Engineering</h3>
+                            <p class="institution">Zakir Husain College of Engineering and Technology, AMU</p>
+                            <p class="duration">2021 - 2025</p>
+                            <p class="description">Pursuing Bachelor's degree in Computer Engineering with focus on software development, algorithms, and system design.</p>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item" data-journey="iit-jodhpur">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h3>Research Intern</h3>
+                            <p class="institution">Indian Institute of Technology Jodhpur</p>
+                            <p class="duration">June 2024 - July 2024</p>
+                            <p class="description">Worked on cutting-edge research projects in computer science and engineering.</p>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item" data-journey="waterloo">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h3>Research Intern</h3>
+                            <p class="institution">University of Waterloo</p>
+                            <p class="duration">June 2023 - Feb 2025</p>
+                            <p class="description">Extended research internship focusing on advanced computing technologies and innovation.</p>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item" data-journey="buckingham">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h3>International Intern</h3>
+                            <p class="institution">The University of Buckingham, UK</p>
+                            <p class="duration">March - May 2023</p>
+                            <p class="description">International exposure through research and academic collaboration in the United Kingdom.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="section">
+            <div class="container">
+                <h2 class="section-title">Get In Touch</h2>
+                <div class="contact-content">
+                    <div class="contact-info">
+                        <div class="contact-card" data-contact="email">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <h3>Email</h3>
+                            <p>@zhcet.ac.in</p>
+                        </div>
+
+                        <div class="contact-card" data-contact="phone">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <h3>Phone</h3>
+                            <p>+91 XXXX XXXXX</p>
+                        </div>
+
+                        <div class="contact-card" data-contact="location">
+                            <div class="contact-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <h3>Location</h3>
+                            <p>Aligarh, Uttar Pradesh, India</p>
+                        </div>
+
+                        <div class="contact-card" data-contact="github">
+                            <div class="contact-icon">
+                                <i class="fab fa-github"></i>
+                            </div>
+                            <h3>GitHub</h3>
+                            <p>github.com/hasanyusuf01</p>
+                        </div>
+
+                        <div class="contact-card" data-contact="linkedin">
+                            <div class="contact-icon">
+                                <i class="fab fa-linkedin"></i>
+                            </div>
+                            <h3>LinkedIn</h3>
+                            <p>linkedin.com/in/yusufhasan16</p>
+                        </div>
+
+                        <div class="contact-card" data-contact="scholar">
+                            <div class="contact-icon">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <h3>Google Scholar</h3>
+                            <p>Yusuf Hasan - Publications</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Certificates Section -->
+        <section id="certificates" class="section">
+            <div class="container">
+                <h2 class="section-title">Certificates & Awards</h2>
+                <div class="certificates-grid">
+                    <div class="certificate-card" data-certificate="ml-cert">
+                        <div class="certificate-header">
+                            <i class="fas fa-certificate"></i>
+                            <h3>Machine Learning Certification</h3>
+                        </div>
+                        <p class="certificate-issuer">Coursera - Stanford University</p>
+                        <p class="certificate-date">2024</p>
+                        <div class="certificate-preview">
+                            <div class="certificate-placeholder">
+                                <i class="fas fa-award fa-3x"></i>
+                                <p>Machine Learning Certificate</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="certificate-card" data-certificate="dl-cert">
+                        <div class="certificate-header">
+                            <i class="fas fa-certificate"></i>
+                            <h3>Deep Learning Specialization</h3>
+                        </div>
+                        <p class="certificate-issuer">Coursera - deeplearning.ai</p>
+                        <p class="certificate-date">2024</p>
+                        <div class="certificate-preview">
+                            <div class="certificate-placeholder">
+                                <i class="fas fa-brain fa-3x"></i>
+                                <p>Deep Learning Certificate</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="certificate-card" data-certificate="research-award">
+                        <div class="certificate-header">
+                            <i class="fas fa-trophy"></i>
+                            <h3>Best Research Paper Award</h3>
+                        </div>
+                        <p class="certificate-issuer">IEEE Conference 2024</p>
+                        <p class="certificate-date">2024</p>
+                        <div class="certificate-preview">
+                            <div class="certificate-placeholder">
+                                <i class="fas fa-trophy fa-3x"></i>
+                                <p>Research Excellence Award</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="certificate-card" data-certificate="internship-cert">
+                        <div class="certificate-header">
+                            <i class="fas fa-certificate"></i>
+                            <h3>Research Internship Certificate</h3>
+                        </div>
+                        <p class="certificate-issuer">University of Waterloo</p>
+                        <p class="certificate-date">2023-2025</p>
+                        <div class="certificate-preview">
+                            <div class="certificate-placeholder">
+                                <i class="fas fa-university fa-3x"></i>
+                                <p>Internship Certificate</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="certificate-card" data-certificate="programming-cert">
+                        <div class="certificate-header">
+                            <i class="fas fa-code"></i>
+                            <h3>Advanced Programming Certificate</h3>
+                        </div>
+                        <p class="certificate-issuer">HackerRank</p>
+                        <p class="certificate-date">2023</p>
+                        <div class="certificate-preview">
+                            <div class="certificate-placeholder">
+                                <i class="fas fa-code fa-3x"></i>
+                                <p>Programming Certificate</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="certificate-card" data-certificate="robotics-cert">
+                        <div class="certificate-header">
+                            <i class="fas fa-robot"></i>
+                            <h3>Robotics & Automation Certificate</h3>
+                        </div>
+                        <p class="certificate-issuer">IIT Jodhpur</p>
+                        <p class="certificate-date">2024</p>
+                        <div class="certificate-preview">
+                            <div class="certificate-placeholder">
+                                <i class="fas fa-robot fa-3x"></i>
+                                <p>Robotics Certificate</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Overlay for Expanded Content -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content" id="modalContent">
+            <button class="modal-close" id="modalClose">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
