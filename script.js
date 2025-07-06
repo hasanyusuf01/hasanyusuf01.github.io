@@ -445,24 +445,22 @@ class Portfolio {
                 skills: 'Research methodology, advanced algorithms, academic writing, data analysis, and collaborative research.'
             },
             'waterloo': {
-                title: 'Research Intern - University of Waterloo',
-                institution: 'University of Waterloo, Canada',
+                title: 'AI/ML Intern',
+                institution: '',
                 duration: 'June 2023 - Feb 2025',
-                description: 'Extended international research internship focusing on advanced computing technologies and innovation.',
+                description: 'Micro Crack Detection',
                 projects: [
-                    'Quantum computing applications research',
-                    'Advanced AI and machine learning projects',
-                    'Cross-cultural academic collaboration',
-                    'Industry-academia partnership projects'
+                    'Conducted research and development on neural network-based crack detection systems for infrastructure monitoring Implemented and evaluated multiple deep learning architectures including Hyper Convolutional Neural Networks and Transformer models and state-of-the-art computer vision models including Meta Segment Anything Model (SAM) Delivered comprehensive analysis and recommendations for optimal crack detection methodologies',
+                    
                 ],
-                achievements: [
-                    'Collaborated with world-renowned researchers',
-                    'Co-authored 3 international publications',
-                    'Developed innovative solutions for industry problems',
-                    'Received excellence award for research contribution'
-                ],
-                experience: 'Gained invaluable international research experience, worked with diverse teams, and contributed to groundbreaking research in computing.',
-                skills: 'International collaboration, advanced research techniques, cross-cultural communication, and innovation.'
+                // achievements: [
+                //     'Collaborated with world-renowned researchers',
+                //     'Co-authored 3 international publications',
+                //     'Developed innovative solutions for industry problems',
+                //     'Received excellence award for research contribution'
+                // ],
+                // experience: 'Gained invaluable international research experience, worked with diverse teams, and contributed to groundbreaking research in computing.',
+                // skills: 'International collaboration, advanced research techniques, cross-cultural communication, and innovation.'
             },
             'buckingham': {
             title: 'Research Intern - University of Buckingham',
