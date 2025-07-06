@@ -465,25 +465,49 @@ class Portfolio {
                 skills: 'International collaboration, advanced research techniques, cross-cultural communication, and innovation.'
             },
             'buckingham': {
-                title: 'International Intern - University of Buckingham',
-                institution: 'University of Buckingham, United Kingdom',
-                duration: 'March - May 2023',
-                description: 'International academic and research exposure through collaboration with UK-based research teams.',
-                focus: [
-                    'European research methodologies',
-                    'International academic standards',
-                    'Cross-cultural research collaboration',
-                    'Global perspective on technology trends'
-                ],
-                achievements: [
-                    'Completed intensive research training program',
-                    'Collaborated with international student community',
-                    'Gained exposure to European academic culture',
-                    'Developed global network of academic contacts'
-                ],
-                impact: 'This experience broadened my global perspective on research and technology, providing valuable insights into international academic standards.',
-                skills: 'International research standards, cultural adaptability, global networking, and cross-cultural communication.'
-            }
+            title: 'Research Intern - University of Buckingham',
+            institution: 'University of Buckingham, United Kingdom',
+            duration: 'March - May 2023',
+            description: 'Underwater video feed enhancement using deep learning models, focusing on improving detection performance in low-visibility aquatic environments.',
+            focus: [
+                'Generative Adversarial Networks (GANs) for image enhancement',
+                'CycleGAN and unpaired training for real-world underwater data',
+                'Image quality restoration for downstream object detection tasks',
+                'Empirical benchmarking of enhancement vs detection accuracy'
+            ],
+            achievements: [
+                'Deployed GAN-based image enhancement pipeline for underwater vision',
+                'Improved object detection accuracy by 15% over baseline',
+                'Worked with limited and noisy datasets typical of marine environments',
+                'Strengthened understanding of GAN loss functions like Minimax and cycle-consistency'
+            ],
+            impact: 'This internship solidified my interest in deep learning, offering practical exposure to applying GANs for image enhancement under real-world constraints and refining vision systems for autonomous robotics.',
+            skills: 'Image enhancement using GANs, domain adaptation, unpaired learning, and performance-driven computer vision.'
+        }
+
+
+
+            
+            // 'buckingham': {
+            //     title: 'International Intern - University of Buckingham',
+            //     institution: 'University of Buckingham, United Kingdom',
+            //     duration: 'March - May 2023',
+            //     description: 'International academic and research exposure through collaboration with UK-based research teams.',
+            //     focus: [
+            //         'European research methodologies',
+            //         'International academic standards',
+            //         'Cross-cultural research collaboration',
+            //         'Global perspective on technology trends'
+            //     ],
+            //     achievements: [
+            //         'Completed intensive research training program',
+            //         'Collaborated with international student community',
+            //         'Gained exposure to European academic culture',
+            //         'Developed global network of academic contacts'
+            //     ],
+            //     impact: 'This experience broadened my global perspective on research and technology, providing valuable insights into international academic standards.',
+            //     skills: 'International research standards, cultural adaptability, global networking, and cross-cultural communication.'
+            // }
         };
         return journey[journeyId] || {};
     }
