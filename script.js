@@ -254,7 +254,7 @@ class Portfolio {
             'und-assessment': {
                 title: 'Drone-Nav-Agent',
                 description: 'The Drone-Nav-Agent system is a Deep Deterministic Policy Gradient (DDPG) reinforcement learning framework designed for training agents to navigate in a 2D point particle environment. The system provides a complete end-to-end pipeline for DDPG-based continuous control learning, including environment simulation, agent training, comprehensive data logging, and trajectory analysis.',
-                technologies: ['Python', 'Jupyter Notebook', 'Data Analysis', 'Statistical Methods', 'Machine Learning', 'Assessment Algorithms'],
+                technologies: ['Python', 'Jupyter Notebook', 'Reinforcement Learning', 'Pytorch', 'Deep Learning', 'UAV', 'Gym'],
                 features: [
                     'Automated assessment algorithms',
                     'Statistical analysis and reporting',
@@ -492,44 +492,44 @@ class Portfolio {
         const contacts = {
             'email': {
                 type: 'Email',
-                value: 'your.email@example.com',
-                description: 'Primary email for professional communications',
-                action: 'mailto:your.email@example.com',
+                value: 'yusufhasan1209@gmail.com',
+                description: 'Primary email for professional communications other  Email ID: yusufhasan@zhcet.ac.in',
+                action: 'mailto:your.yusufhasan1209@gmail.com',
                 tips: 'Best for detailed discussions, project inquiries, and professional correspondence.'
             },
             'phone': {
                 type: 'Phone',
-                value: '+91 12345 67890',
+                value: '+91 8979159476',
                 description: 'Direct phone number for urgent matters',
-                action: 'tel:+911234567890',
+                action: 'tel:+918979159476',
                 tips: 'Available during business hours (9 AM - 6 PM IST) for urgent discussions.'
             },
             'location': {
                 type: 'Location',
                 value: 'Aligarh, Uttar Pradesh, India',
                 description: 'Current location and base for in-person meetings',
-                action: 'https://maps.google.com/?q=Aligarh,Uttar+Pradesh,India',
+                action: 'https://maps.app.goo.gl/hh8acN52V7xn3ZQN6',
                 tips: 'Open to in-person meetings in the Delhi NCR region and Aligarh area.'
             },
             'github': {
                 type: 'GitHub',
-                value: 'github.com/yourusername',
+                value: 'https://github.com/hasanyusuf01',
                 description: 'Code repositories and open source contributions',
-                action: 'https://github.com/yourusername',
+                action: 'https://github.com/hasanyusuf01',
                 tips: 'Check out my latest projects, contributions, and code samples.'
             },
             'linkedin': {
                 type: 'LinkedIn',
-                value: 'linkedin.com/in/yourprofile',
+                value: 'https://www.linkedin.com/in/yusufhasan16/',
                 description: 'Professional networking and career updates',
-                action: 'https://linkedin.com/in/yourprofile',
+                action: 'https://www.linkedin.com/in/yusufhasan16/',
                 tips: 'Connect for professional networking, career opportunities, and industry insights.'
             },
             'instagram': {
                 type: 'Instagram',
-                value: '@yourusername',
+                value: '',
                 description: 'Personal updates and behind-the-scenes content',
-                action: 'https://instagram.com/yourusername',
+                action: 'https://instagram.com/',
                 tips: 'Follow for personal updates, travel experiences, and life insights.'
             }
         };
