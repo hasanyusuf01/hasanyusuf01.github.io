@@ -9,7 +9,7 @@ class Portfolio {
         this.setupNavigation();
         this.setupMobileMenu();
         this.setupModalSystem();
-        this.setupExpandableCards();
+        // this.setupExpandableCards();
         this.setupSmoothScrolling();
         this.observeElements();
         
