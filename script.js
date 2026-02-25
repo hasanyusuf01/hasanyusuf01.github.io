@@ -9,7 +9,7 @@ class Portfolio {
         this.setupNavigation();
         this.setupMobileMenu();
         this.setupModalSystem();
-        // this.setupExpandableCards();
+        this.setupExpandableCards();
         this.setupSmoothScrolling();
         this.observeElements();
         
@@ -135,12 +135,12 @@ class Portfolio {
         });
 
         // Contact cards
-        document.querySelectorAll('.contact-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const contactId = card.getAttribute('data-contact');
-                this.showContactModal(contactId);
-            });
-        });
+        // document.querySelectorAll('.contact-card').forEach(card => {
+        //     card.addEventListener('click', () => {
+        //         const contactId = card.getAttribute('data-contact');
+        //         this.showContactModal(contactId);
+        //     });
+        // });
 
         // Certificate cards
         document.querySelectorAll('.certificate-card').forEach(card => {
