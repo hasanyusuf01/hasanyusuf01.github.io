@@ -1,192 +1,388 @@
-// Navigation functionality
+/* ═══════════════════════════════════════════════════════
+   NEURAL-NETWORK CANVAS BACKGROUND ANIMATION
+═══════════════════════════════════════════════════════ */
+class NeuralCanvas {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx    = canvas.getContext('2d');
+        this.particles = [];
+        this.mouse  = { x: -9999, y: -9999 };
+        this.N      = 75;
+        this.LINK   = 140;   // max distance to draw a line
+        this.MOUSE_R = 130;  // mouse influence radius
+        this.raf    = null;
+        this._init();
+    }
+
+    _init() {
+        this._resize();
+        window.addEventListener('resize', () => this._resize());
+
+        const host = this.canvas.parentElement;
+        host.addEventListener('mousemove', e => {
+            const r = this.canvas.getBoundingClientRect();
+            this.mouse.x = e.clientX - r.left;
+            this.mouse.y = e.clientY - r.top;
+        });
+        host.addEventListener('mouseleave', () => {
+            this.mouse.x = -9999; this.mouse.y = -9999;
+        });
+
+        for (let i = 0; i < this.N; i++) this.particles.push(this._mkParticle());
+        this._loop();
+    }
+
+    _resize() {
+        this.canvas.width  = this.canvas.offsetWidth;
+        this.canvas.height = this.canvas.offsetHeight;
+    }
+
+    _mkParticle() {
+        return {
+            x:  Math.random() * this.canvas.width,
+            y:  Math.random() * this.canvas.height,
+            vx: (Math.random() - .5) * .45,
+            vy: (Math.random() - .5) * .45,
+            r:  Math.random() * 2.2 + 1.2,
+            ph: Math.random() * Math.PI * 2,
+            ps: Math.random() * .025 + .008
+        };
+    }
+
+    _loop() {
+        const ctx = this.ctx;
+        const W = this.canvas.width, H = this.canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        /* ── update particles ── */
+        for (const p of this.particles) {
+            p.x  += p.vx;
+            p.y  += p.vy;
+            p.ph += p.ps;
+            if (p.x < 0 || p.x > W) p.vx *= -1;
+            if (p.y < 0 || p.y > H) p.vy *= -1;
+
+            // gentle mouse attraction
+            const dx = this.mouse.x - p.x, dy = this.mouse.y - p.y;
+            const d  = Math.hypot(dx, dy);
+            if (d < this.MOUSE_R) {
+                const f = (this.MOUSE_R - d) / this.MOUSE_R * 0.018;
+                p.vx += dx * f; p.vy += dy * f;
+                const spd = Math.hypot(p.vx, p.vy);
+                if (spd > 1.8) { p.vx = p.vx/spd*1.8; p.vy = p.vy/spd*1.8; }
+            }
+        }
+
+        /* ── draw connections ── */
+        for (let i = 0; i < this.particles.length; i++) {
+            const a = this.particles[i];
+            for (let j = i + 1; j < this.particles.length; j++) {
+                const b = this.particles[j];
+                const d = Math.hypot(a.x - b.x, a.y - b.y);
+                if (d < this.LINK) {
+                    const alpha = (1 - d / this.LINK) * .38;
+                    ctx.beginPath();
+                    ctx.moveTo(a.x, a.y);
+                    ctx.lineTo(b.x, b.y);
+                    ctx.strokeStyle = `rgba(37,99,235,${alpha})`;
+                    ctx.lineWidth = .8;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        /* ── draw particles ── */
+        for (const p of this.particles) {
+            const pulse = .85 + Math.sin(p.ph) * .15;
+            const r = p.r * pulse;
+
+            // soft glow
+            const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 4);
+            g.addColorStop(0, 'rgba(59,130,246,.55)');
+            g.addColorStop(1, 'rgba(37,99,235,0)');
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, r * 4, 0, Math.PI * 2);
+            ctx.fillStyle = g; ctx.fill();
+
+            // core dot
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(37,99,235,.9)';
+            ctx.fill();
+        }
+
+        this.raf = requestAnimationFrame(() => this._loop());
+    }
+
+    stop() { cancelAnimationFrame(this.raf); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   PORTFOLIO CLASS
+═══════════════════════════════════════════════════════ */
 class Portfolio {
     constructor() {
-        this.currentSection = 'home';
-        this.init();
+        // Section order (matches DOM order inside .sections-track)
+        this.sectionOrder = ['home', 'projects', 'research', 'journey', 'contact', 'certificates'];
+        this.currentIdx   = 0;
+        this.neuralCanvas = null;
+        this._init();
     }
 
-    init() {
-        this.setupNavigation();
-        this.setupMobileMenu();
-        this.setupModalSystem();
-        this.setupExpandableCards();
-        this.setupSmoothScrolling();
-        this.observeElements();
-        
-        // Set initial active section
-        this.showSection('home');
+    _init() {
+        this._setupNavigation();
+        this._setupMobileMenu();
+        this._setupModalSystem();
+        this._setupExpandableCards();
+        this._buildScrollHint();
+        this._setupArrows();
+        this._setupKeyboard();
+        this._initCanvas();
+        this._goTo(0, false); // show home without animation on load
+        this._addModalStyles();
     }
 
-    setupNavigation() {
-        const navLinks = document.querySelectorAll('.nav-link');
-        
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
+    /* ── Canvas ─────────────────────────────── */
+    _initCanvas() {
+        const el = document.getElementById('neuralCanvas');
+        if (el) this.neuralCanvas = new NeuralCanvas(el);
+    }
+
+    /* ── Navigation ─────────────────────────── */
+    _setupNavigation() {
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', e => {
                 e.preventDefault();
-                const section = link.getAttribute('data-section');
-                this.showSection(section);
-                this.updateActiveNav(link);
+                const id = link.getAttribute('data-section');
+                const idx = this.sectionOrder.indexOf(id);
+                if (idx !== -1) this._goTo(idx);
+                document.querySelector('.hamburger').classList.remove('active');
+                document.querySelector('.nav-menu').classList.remove('active');
             });
         });
     }
 
-    setupMobileMenu() {
-        const hamburger = document.querySelector('.hamburger');
-        const navMenu = document.querySelector('.nav-menu');
-
-        hamburger.addEventListener('click', () => {
-            hamburger.classList.toggle('active');
-            navMenu.classList.toggle('active');
+    _setupMobileMenu() {
+        const hb = document.querySelector('.hamburger');
+        const nm = document.querySelector('.nav-menu');
+        hb.addEventListener('click', () => {
+            hb.classList.toggle('active');
+            nm.classList.toggle('active');
         });
+    }
 
-        // Close mobile menu when clicking on a link
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', () => {
-                hamburger.classList.remove('active');
-                navMenu.classList.remove('active');
+    _setupKeyboard() {
+        document.addEventListener('keydown', e => {
+            if (document.getElementById('modalOverlay').classList.contains('active')) return;
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  this._next();
+            if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    this._prev();
+        });
+    }
+
+    /* ── Scroll Hint (dots + arrows) ─────────── */
+    _buildScrollHint() {
+        const dotsEl = document.getElementById('scrollDots');
+        const visible = this.sectionOrder.filter(id => id !== 'certificates');
+        visible.forEach((id, i) => {
+            const dot = document.createElement('button');
+            dot.className = 'scroll-dot' + (i === 0 ? ' active' : '');
+            dot.title = id.charAt(0).toUpperCase() + id.slice(1);
+            dot.addEventListener('click', () => {
+                const realIdx = this.sectionOrder.indexOf(id);
+                this._goTo(realIdx);
             });
+            dotsEl.appendChild(dot);
         });
     }
 
-    showSection(sectionId) {
-        // Hide all sections
-        document.querySelectorAll('.section').forEach(section => {
-            section.classList.remove('active');
-        });
-
-        // Show target section
-        const targetSection = document.getElementById(sectionId);
-        if (targetSection) {
-            targetSection.classList.add('active');
-            this.currentSection = sectionId;
-            
-            // Animate elements in the section
-            this.animateSection(targetSection);
-        }
+    _updateDots() {
+        const visible = this.sectionOrder.filter(id => id !== 'certificates');
+        const dots    = document.querySelectorAll('.scroll-dot');
+        const sectionId = this.sectionOrder[this.currentIdx];
+        const dotIdx    = visible.indexOf(sectionId);
+        dots.forEach((d, i) => d.classList.toggle('active', i === dotIdx));
     }
 
-    updateActiveNav(activeLink) {
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-        activeLink.classList.add('active');
+    _setupArrows() {
+        document.getElementById('scrollLeft') .addEventListener('click', () => this._prev());
+        document.getElementById('scrollRight').addEventListener('click', () => this._next());
     }
 
-    animateSection(section) {
-        const elements = section.querySelectorAll('.project-card, .research-card, .timeline-item, .contact-card');
-        
-        elements.forEach((element, index) => {
-            element.style.opacity = '0';
-            element.style.transform = 'translateY(30px)';
-            
+    _next() {
+        // Skip certificates in normal flow
+        let next = this.currentIdx + 1;
+        if (this.sectionOrder[next] === 'certificates') next++;
+        if (next < this.sectionOrder.length) this._goTo(next);
+    }
+    _prev() {
+        let prev = this.currentIdx - 1;
+        if (this.sectionOrder[prev] === 'certificates') prev--;
+        if (prev >= 0) this._goTo(prev);
+    }
+
+    /* ── Core section switcher ─────────────── */
+    _goTo(idx, animate = true) {
+        this.currentIdx = idx;
+        const track = document.getElementById('sectionsTrack');
+        if (!animate) track.style.transition = 'none';
+        track.style.transform = `translateX(-${idx * 100}vw)`;
+        if (!animate) requestAnimationFrame(() => { track.style.transition = ''; });
+
+        // Update active section class
+        document.querySelectorAll('.section').forEach((s, i) => {
+            s.classList.toggle('active', i === idx);
+        });
+
+        // Update nav link
+        const id = this.sectionOrder[idx];
+        document.querySelectorAll('.nav-link').forEach(l => {
+            l.classList.toggle('active', l.getAttribute('data-section') === id);
+        });
+
+        this._updateDots();
+        this._animateSection(document.getElementById(id));
+    }
+
+    _animateSection(section) {
+        if (!section) return;
+        const els = section.querySelectorAll(
+            '.project-card, .research-card, .journey-card, .award-card, .contact-card, .certificate-card'
+        );
+        els.forEach((el, i) => {
+            el.style.opacity   = '0';
+            el.style.transform = 'translateY(24px)';
             setTimeout(() => {
-                element.style.transition = 'all 0.5s ease';
-                element.style.opacity = '1';
-                element.style.transform = 'translateY(0)';
-            }, index * 100);
+                el.style.transition = 'all .45s ease';
+                el.style.opacity    = '1';
+                el.style.transform  = 'translateY(0)';
+            }, i * 80);
         });
     }
 
-    setupModalSystem() {
-        const modalOverlay = document.getElementById('modalOverlay');
-        const modalClose = document.getElementById('modalClose');
+    /* ── Modal System ───────────────────────── */
+    _setupModalSystem() {
+        const overlay = document.getElementById('modalOverlay');
+        document.getElementById('modalClose').addEventListener('click', () => this._closeModal());
+        overlay.addEventListener('click', e => { if (e.target === overlay) this._closeModal(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') this._closeModal(); });
+    }
 
-        modalClose.addEventListener('click', () => {
-            this.closeModal();
-        });
+    _setupExpandableCards() {
+        document.querySelectorAll('.project-card').forEach(c =>
+            c.addEventListener('click', () => this._openModal(this._projectContent(this.getProjectData(c.dataset.project)))));
+        document.querySelectorAll('.research-card').forEach(c =>
+            c.addEventListener('click', () => this._openModal(this._researchContent(this.getResearchData(c.dataset.research)))));
+        document.querySelectorAll('.journey-card').forEach(c =>
+            c.addEventListener('click', () => this._openModal(this._journeyContent(this.getJourneyData(c.dataset.journey)))));
+        document.querySelectorAll('.certificate-card').forEach(c =>
+            c.addEventListener('click', () => this._openModal(this._certificateContent(this.getCertificateData(c.dataset.certificate)))));
+    }
 
-        modalOverlay.addEventListener('click', (e) => {
-            if (e.target === modalOverlay) {
-                this.closeModal();
+    _openModal(html) {
+        document.getElementById('modalBody').innerHTML = html;
+        document.getElementById('modalOverlay').classList.add('active');
+        document.body.classList.add('modal-active');
+    }
+    _closeModal() {
+        document.getElementById('modalOverlay').classList.remove('active');
+        document.body.classList.remove('modal-active');
+    }
+
+    /* ═══════════════════════════════════════════
+       DATA STORES
+    ═══════════════════════════════════════════ */
+    getJourneyData(id) {
+        const d = {
+            'exatorial': {
+                title: 'Generative AI Developer',
+                institution: 'Exatorial · India (Remote)',
+                duration: 'Jun 2024 – Jan 2025',
+                type: 'Industry',
+                description: 'Built production multi-agent AI systems for automated document intelligence, combining advanced RAG architectures with robust OCR pipelines to process heterogeneous enterprise data at scale.',
+                projects: [
+                    'Multi-agent orchestration for multilingual transcripts and heterogeneous documents (PDFs, DOCX, Excel, images)',
+                    'Advanced OCR/image-parsing workflows with fallback strategies for noisy, mixed-content inputs',
+                    'Weighted retrieval agent merging multiple vector stores with query expansion, re-ranking, and metadata-based filtering',
+                    'End-to-end RAG pipeline evaluation and latency optimisation for production deployment'
+                ],
+                achievements: [
+                    'Reduced manual document-processing time by ~60% through agent automation',
+                    'High-precision retrieval system across 5+ heterogeneous file formats',
+                    'Deployed robust fallback OCR pipeline handling corrupted and scanned inputs'
+                ],
+                skills: 'LangChain, LangGraph, RAG, Pinecone, ChromaDB, LLMs, Python, OCR, Vector Search, Multi-agent Systems'
+            },
+            'kiel': {
+                title: 'AI / ML Intern',
+                institution: 'Christian-Albrechts-Universität zu Kiel · Germany (Remote)',
+                duration: 'Jun 2023 – Feb 2025',
+                type: 'Research',
+                description: 'Led deep-learning research for real-time structural health monitoring — designing novel transformer-CNN hybrid architectures for microcrack detection in ultrasonic wave fields.',
+                projects: [
+                    'MicroCrackAttNet50E — transformer-CNN hybrid with self-attention and 1D convolutions (+15% accuracy, −30% overhead)',
+                    'Hybrid CNN-GRU with custom loss functions for damage localisation in SHM datasets',
+                    'MCMN (MicroCracksMetaNet50E) — SAM-inspired decoder for multi-material crack detection (ICMLA 2024)',
+                    'Wave-Based Neural Network with attention mechanism for physics-informed damage localisation (ICMLA 2024)'
+                ],
+                achievements: [
+                    '+15% classification accuracy over CNN baseline on ultrasonic sensor data',
+                    '−30% computational overhead via 1D convolution and attention optimisation',
+                    'Co-authored 4 peer-reviewed publications: MDPI Sensors, Nature Scientific Reports, IEEE ICMLA ×2'
+                ],
+                skills: 'PyTorch, TensorFlow, Transformer, CNN, GRU, Signal Processing, Weights & Biases, TensorBoard, Detectron2, YOLO'
+            },
+            'buckingham': {
+                title: 'AI / ML Research Intern',
+                institution: 'University of Buckingham · United Kingdom (Remote)',
+                duration: 'Mar – May 2023',
+                type: 'Research',
+                description: 'Developed a GAN-based real-time video enhancement pipeline for Autonomous Underwater Vehicles, addressing the challenge of low-visibility detection in turbid marine environments.',
+                projects: [
+                    'U-Net–based GAN (CycleGAN) for unpaired real-world underwater image enhancement',
+                    'YOLOv8 fine-tuning for tiny object detection on GAN-enhanced AUV imagery',
+                    'Benchmarking: enhancement quality vs. downstream detection accuracy trade-off analysis'
+                ],
+                achievements: [
+                    '+15% precision and F1-score on underwater object detection vs. raw-image baseline',
+                    'Real-time enhancement pipeline suitable for AUV onboard inference',
+                    'Published at SPIE Defense + Commercial Sensing 2024'
+                ],
+                skills: 'YOLOv8, GAN, U-Net, CycleGAN, OpenCV, Computer Vision, TensorFlow, AUV, Image Enhancement'
+            },
+            'education': {
+                title: 'B.Tech, Computer Engineering',
+                institution: 'Zakir Husain College of Engineering & Technology, AMU · Aligarh, India',
+                duration: '2021 – 2025',
+                type: 'Education',
+                description: 'Four-year honours degree in Computer Engineering with a focus on AI, Machine Learning, Computer Vision, Robotics, and Autonomous Systems.',
+                coursework: [
+                    'Machine Learning & Deep Learning',
+                    'Computer Vision & Image Processing',
+                    'Data Structures & Algorithms',
+                    'Operating Systems & Computer Networks',
+                    'Embedded Systems & Microcontrollers',
+                    'Database Management Systems',
+                    'Robotics & Control Systems',
+                    'Signal Processing'
+                ],
+                achievements: [
+                    'CGPA: 8.67 / 10.0',
+                    'Led AUV-ZHCET Club software team for competitive underwater robotics',
+                    '3 national-level awards during undergraduate programme',
+                    'Completed 3 international research internships alongside coursework'
+                ],
+                skills: 'Python, C/C++, Machine Learning, Computer Vision, Robotics, Algorithms, Linux, Embedded Systems'
             }
-        });
-
-        // Close modal with Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.closeModal();
-            }
-        });
+        };
+        return d[id] || {};
     }
 
-    setupExpandableCards() {
-        // Project cards
-        document.querySelectorAll('.project-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const projectId = card.getAttribute('data-project');
-                this.showProjectModal(projectId);
-            });
-        });
-
-        // Research cards
-        document.querySelectorAll('.research-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const researchId = card.getAttribute('data-research');
-                this.showResearchModal(researchId);
-            });
-        });
-
-        // Timeline items
-        document.querySelectorAll('.timeline-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const journeyId = item.getAttribute('data-journey');
-                this.showJourneyModal(journeyId);
-            });
-        });
-
-        // Contact cards
-        // document.querySelectorAll('.contact-card').forEach(card => {
-        //     card.addEventListener('click', () => {
-        //         const contactId = card.getAttribute('data-contact');
-        //         this.showContactModal(contactId);
-        //     });
-        // });
-
-        // Certificate cards
-        document.querySelectorAll('.certificate-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const certificateId = card.getAttribute('data-certificate');
-                this.showCertificateModal(certificateId);
-            });
-        });
-    }
-
-    showProjectModal(projectId) {
-        const projectData = this.getProjectData(projectId);
-        const modalContent = this.createProjectModalContent(projectData);
-        this.openModal(modalContent);
-    }
-
-    showResearchModal(researchId) {
-        const researchData = this.getResearchData(researchId);
-        const modalContent = this.createResearchModalContent(researchData);
-        this.openModal(modalContent);
-    }
-
-    showJourneyModal(journeyId) {
-        const journeyData = this.getJourneyData(journeyId);
-        const modalContent = this.createJourneyModalContent(journeyData);
-        this.openModal(modalContent);
-    }
-
-    showContactModal(contactId) {
-        const contactData = this.getContactData(contactId);
-        const modalContent = this.createContactModalContent(contactData);
-        this.openModal(modalContent);
-    }
-
-    showCertificateModal(certificateId) {
-        const certificateData = this.getCertificateData(certificateId);
-        const modalContent = this.createCertificateModalContent(certificateData);
-        this.openModal(modalContent);
-    }
-
-    getProjectData(projectId) {
-        const projects = {
+    getProjectData(id) {
+        const p = {
             'rovc': {
-                title: 'ROVC2.0 - Remotely Operated Vehicle',
-                description: 'Comprehensive ROV system incorporating advanced object detection algorithms, intuitive GUI interface, precise thruster control, IMU calibration, and pressure sensor integration for underwater exploration and research.',
-                technologies: ['Python', 'Computer Vision', 'OpenCV', 'PyQt/Tkinter', 'Robotics Control', 'Serial Communication'],
+                title: 'ROVC2.0 – Remotely Operated Vehicle',
+                description: 'Comprehensive ROV system integrating object detection, GUI control interface, precision thruster management, IMU calibration, and pressure-sensor-based depth monitoring for underwater exploration.',
+                technologies: ['Python','Computer Vision','OpenCV','PyQt/Tkinter','Robotics Control','Serial Communication'],
                 features: [
                     'Real-time object detection and tracking',
                     'Intuitive graphical user interface',
@@ -196,903 +392,303 @@ class Portfolio {
                     'Custom control libraries for ROV operations'
                 ],
                 github: 'https://github.com/hasanyusuf01/ROVC2.0',
-                demo: 'Forked and enhanced from original ROVC project',
-                challenges: 'Integrating multiple sensor systems while maintaining real-time performance and ensuring reliable underwater communication.',
-                outcome: 'Successfully developed a fully functional ROV system capable of autonomous underwater navigation and object detection.'
+                challenges: 'Integrating multiple sensor streams while ensuring real-time performance and reliable underwater communication.',
+                outcome: 'Fully functional ROV capable of autonomous underwater navigation and object detection — secured 3rd prize at AMUROVc 2.0.'
             },
             'stewart-platform': {
-                title: 'Stewart Platform - 6DoF Parallel Robot',
-                description: 'Advanced neural network system designed to predict 6 Degrees of Freedom (6DoF) for parallel robot control, utilizing custom multi-modal neural networks for precise robotic movement prediction.',
-                technologies: ['Neural Networks', 'Machine Learning', 'Python', 'Jupyter Notebook', 'Robotics Kinematics', 'TensorFlow/PyTorch'],
+                title: 'Stewart Platform – 6DoF Parallel Robot',
+                description: 'AI-powered control tool for a 6-DOF Stewart Platform using multimodal neural networks (ResNet50, VGG, PoseNet) to predict platform motion from live video with IMU fusion.',
+                technologies: ['PyTorch','TensorFlow','OpenCV','ArUco Markers','Streamlit','IMU Fusion'],
                 features: [
-                    'Custom multi-modal neural network architecture',
-                    '6DoF position and orientation prediction',
-                    'Real-time robotic control integration',
-                    'Advanced kinematic modeling',
-                    'Parallel robot motion optimization',
-                    'Training data generation and validation'
+                    'Multimodal neural network (ResNet50 + VGG + PoseNet) for 6-DOF prediction',
+                    'Live video processing pipeline with IMU data fusion',
+                    'ArUco marker tracking for real-time pose estimation',
+                    'Streamlit-based interactive control dashboard',
+                    'Real-time robot state monitoring and logging'
                 ],
                 github: 'https://github.com/hasanyusuf01/Stewart-Platform-',
-                demo: 'Research project for parallel robot control',
-                challenges: 'Developing accurate neural networks for complex 6DoF predictions while ensuring real-time performance for robotic applications.',
-                outcome: 'Achieved high-precision 6DoF predictions enabling smooth and accurate parallel robot movements.'
+                challenges: 'Achieving accurate 6-DOF predictions from monocular video while compensating for vibration and sensor noise.',
+                outcome: 'Achieved high-precision 6-DOF prediction enabling smooth, accurate parallel robot movement control.'
             },
             'ni3d': {
-                title: 'Ni3D - Photogrammetry 3D Reconstruction',
-                description: 'Low-cost 3D reconstruction model utilizing photogrammetry techniques to create accurate 3D models from 2D images, making 3D scanning accessible and affordable.',
-                technologies: ['Python', 'Computer Vision', 'Photogrammetry', '3D Reconstruction', 'OpenCV', 'Point Cloud Processing'],
+                title: 'Ni3D – Photogrammetry 3D Reconstruction',
+                description: 'Low-cost 3D reconstruction pipeline using photogrammetry — multi-view stereo, feature matching, point-cloud generation, mesh reconstruction, and UV texture mapping from 2D images.',
+                technologies: ['Python','OpenCV','Open3D','Photogrammetry','Point Cloud Processing'],
                 features: [
-                    'Multi-view stereo reconstruction',
+                    'Multi-view stereo reconstruction pipeline',
                     'Automatic feature matching and tracking',
-                    'Point cloud generation and processing',
-                    'Mesh reconstruction and optimization',
-                    'Texture mapping and UV unwrapping',
-                    'Cost-effective alternative to expensive 3D scanners'
+                    'Point cloud generation and outlier removal',
+                    'Mesh reconstruction and Laplacian smoothing',
+                    'UV texture mapping',
+                    'Cost-effective alternative to commercial 3D scanners'
                 ],
                 github: 'https://github.com/hasanyusuf01/Ni3D',
-                demo: 'Open-source 3D reconstruction solution',
-                challenges: 'Achieving high-quality 3D reconstructions with minimal hardware requirements while maintaining accuracy comparable to commercial solutions.',
-                outcome: 'Developed an accessible 3D reconstruction pipeline that produces high-quality models at a fraction of traditional costs.'
-            },
-            'codes-collection': {
-                title: 'ML/DL Projects Collection',
-                description: 'Comprehensive repository encompassing diverse projects in machine learning, deep learning, signal processing, and image processing, showcasing expertise across multiple domains.',
-                technologies: ['Machine Learning', 'Deep Learning', 'Signal Processing', 'Image Processing', 'Python', 'Jupyter Notebook'],
-                features: [
-                    'Diverse machine learning algorithms implementation',
-                    'Deep learning model architectures',
-                    'Signal processing techniques and applications',
-                    'Advanced image processing methods',
-                    'Data analysis and visualization tools',
-                    'Educational examples and tutorials'
-                ],
-                github: 'https://github.com/hasanyusuf01/Codes',
-                demo: 'Collection of research and educational projects',
-                challenges: 'Implementing and optimizing various algorithms across different domains while maintaining code quality and documentation.',
-                outcome: 'Created a comprehensive learning resource demonstrating proficiency in multiple technical domains.'
+                challenges: 'High-quality reconstruction with minimal hardware requirements and arbitrary unstructured image sets.',
+                outcome: 'Accessible open-source 3D reconstruction pipeline producing quality models at a fraction of commercial scanner costs.'
             },
             'und-assessment': {
                 title: 'Drone-Nav-Agent',
-                description: 'The Drone-Nav-Agent system is a Deep Deterministic Policy Gradient (DDPG) reinforcement learning framework designed for training agents to navigate in a 2D point particle environment. The system provides a complete end-to-end pipeline for DDPG-based continuous control learning, including environment simulation, agent training, comprehensive data logging, and trajectory analysis.',
-                technologies: ['Python', 'Jupyter Notebook', 'Reinforcement Learning', 'Pytorch', 'Deep Learning', 'UAV', 'Gym'],
+                description: 'Deep Deterministic Policy Gradient (DDPG) reinforcement learning framework for autonomous drone navigation in a continuous 2D custom OpenAI Gym environment.',
+                technologies: ['Python','PyTorch','Reinforcement Learning','OpenAI Gym','NumPy','Matplotlib'],
                 features: [
-                    'Automated assessment algorithms',
-                    'Statistical analysis and reporting',
-                    'Data visualization and insights',
-                    'Performance evaluation metrics',
-                    'Scalable assessment framework',
-                    'Research-grade analysis tools'
+                    'Custom 2D continuous-action Gym environment',
+                    'Full DDPG implementation: actor-critic networks, experience replay, target networks',
+                    'Comprehensive data logging and trajectory visualisation',
+                    'Reward shaping for efficient navigation',
+                    'Convergence diagnostics and training dashboards'
                 ],
                 github: 'https://github.com/hasanyusuf01/und_assessment',
-                demo: 'University research project',
-                challenges: 'Developing robust assessment methodologies that provide accurate and reliable evaluation results for research purposes.',
-                outcome: 'Contributed to university research with reliable assessment tools used in academic evaluation studies.'
+                challenges: 'Stable training in continuous action spaces with sparse rewards — addressed via reward shaping and prioritised replay.',
+                outcome: 'Successfully trained drone agent capable of reaching arbitrary goal positions in a 2D obstacle environment.'
             },
             'webhook-system': {
                 title: 'Webhook Integration System',
-                description: 'Real-time webhook system designed for automated data processing and seamless integration between different services and platforms.',
-                technologies: ['HTML', 'JavaScript', 'Web APIs', 'Real-time Processing', 'Integration Services', 'HTTP Protocols'],
+                description: 'Real-time webhook system designed for automated data processing and seamless integration between services.',
+                technologies: ['HTML','JavaScript','Node.js','HTTP Protocols','Real-time Processing'],
                 features: [
-                    'Real-time webhook processing',
-                    'Multi-service integration capabilities',
-                    'Automated data routing and processing',
-                    'Error handling and retry mechanisms',
-                    'Scalable webhook management',
-                    'Monitoring and logging systems'
+                    'Real-time webhook ingestion and routing',
+                    'Multi-service integration support',
+                    'Automated data processing pipelines',
+                    'Error handling and exponential-backoff retry',
+                    'Request logging and monitoring dashboard'
                 ],
                 github: 'https://github.com/hasanyusuf01/webhook-repo',
-                demo: 'Integration and automation system',
-                challenges: 'Ensuring reliable real-time processing while handling multiple concurrent webhook requests and maintaining system stability.',
-                outcome: 'Successfully implemented a robust webhook system enabling seamless automation and integration workflows.'
+                challenges: 'Handling high-concurrency webhook bursts while guaranteeing delivery ordering and idempotency.',
+                outcome: 'Robust automation system enabling seamless event-driven integration workflows.'
+            },
+            'codes-collection': {
+                title: 'ML/DL Projects Collection',
+                description: 'Comprehensive repository of machine learning, deep learning, signal processing, and image processing implementations with documentation and tutorials.',
+                technologies: ['Python','Jupyter Notebook','scikit-learn','PyTorch','NumPy','Pandas'],
+                features: [
+                    'Classical ML algorithms from scratch',
+                    'CNN, RNN, LSTM architectures',
+                    'Signal processing and FFT analysis',
+                    'Image segmentation and object detection experiments',
+                    'Educational notebooks with explanations'
+                ],
+                github: 'https://github.com/hasanyusuf01/Codes',
+                challenges: 'Covering a breadth of domains while maintaining code quality, reproducibility, and documentation.',
+                outcome: 'Comprehensive learning resource demonstrating multi-domain ML/DL proficiency.'
             }
         };
-        return projects[projectId] || {};
+        return p[id] || {};
     }
 
-    getResearchData(researchId) {
-        const research = {
+    getResearchData(id) {
+        const r = {
             'neural-anomaly': {
-                title: 'Neural Network Based Anomaly Detection Method for Network Datasets',
-                abstract: 'This research presents an advanced neural network approach for detecting anomalies in network security datasets, leveraging deep learning techniques to identify unusual patterns and potential security threats in network traffic.',
-                authors: ['B Zahid Hussain', 'Yusuf Hasan', 'Irfan Khan'],
-                venue: 'Authorea Preprints',
-                year: '2024',
+                title: 'Neural Network Based Anomaly Detection for Network Datasets',
+                abstract: 'Advanced neural network approach for detecting anomalies in network security datasets using deep learning to identify unusual patterns in network traffic.',
+                authors: ['B Zahid Hussain','Yusuf Hasan','Irfan Khan'],
+                venue: 'Authorea Preprints', year: '2024',
                 doi: 'https://www.authorea.com/doi/full/10.36227/techrxiv.170906907.74394397',
-                keywords: ['Neural Networks', 'Anomaly Detection', 'Network Security', 'Machine Learning'],
-                methodology: 'We developed a specialized neural network architecture optimized for network anomaly detection, trained on large-scale network datasets.',
-                results: 'Achieved high accuracy in detecting network anomalies with reduced false positive rates compared to traditional methods.',
-                impact: 'This work has been cited 5 times and contributes to advancing network security research.',
+                keywords: ['Neural Networks','Anomaly Detection','Network Security','Machine Learning'],
+                methodology: 'Specialised neural architecture optimised for network anomaly detection, trained on large-scale traffic datasets.',
+                results: 'High detection accuracy with reduced false positives vs. traditional rule-based methods.',
+                impact: '5 citations — contributes to network security research.',
                 citations: 5
             },
             'damage-localization': {
                 title: 'Hybrid Neural Network Method for Damage Localization in Structural Health Monitoring',
-                abstract: 'Innovative approach using hybrid neural networks for accurate detection and localization of structural damage, combining multiple sensing modalities for comprehensive structural health assessment.',
-                authors: ['F Moreh', 'Yusuf Hasan', 'Zarghaam Rizvi', 'Sven Tomforde', 'Frank Wuttke'],
-                venue: 'Scientific Reports',
-                year: '2025',
+                abstract: 'Hybrid RNN-CNN model for structural damage localisation, demonstrating superior accuracy over pure CNNs while reducing parameter count.',
+                authors: ['F Moreh','Yusuf Hasan','Zarghaam Rizvi','Sven Tomforde','Frank Wuttke'],
+                venue: 'Nature Scientific Reports', year: '2025',
                 doi: 'https://doi.org/10.1038/s41598-025-92396-9',
-                keywords: ['Structural Health Monitoring', 'Hybrid Neural Networks', 'Damage Detection', 'Civil Engineering'],
-                methodology: 'Developed hybrid neural network combining convolutional and recurrent architectures for multi-modal damage detection.',
-                results: 'Demonstrated superior accuracy in damage localization compared to existing methods across various structural types.',
-                impact: 'Published in high-impact journal with 2 citations, advancing structural monitoring technology.',
+                keywords: ['Structural Health Monitoring','Hybrid RNN-CNN','Damage Detection'],
+                methodology: 'Single-RNN-layer hybrid with supporting convolutional blocks for multi-modal damage detection.',
+                results: 'Superior damage localisation with fewer parameters than pure-CNN baseline.',
+                impact: '2 citations in high-impact journal.',
                 citations: 2
             },
             'auv-software': {
-                title: 'Design and Implementation of Autonomous Underwater Vehicles\' Software Stack',
-                abstract: 'Comprehensive software architecture development for autonomous underwater vehicle systems, focusing on robust control algorithms and real-time underwater navigation capabilities.',
-                authors: ['D Singh', 'K Masood', 'N Jamshed', 'Y Farooq', 'Yusuf Hasan', 'H Ahmad'],
-                venue: 'IEEE International Conference on Power, Instrumentation, Energy and Control',
-                year: '2023',
+                title: "Design and Implementation of Autonomous Underwater Vehicles' Software Stack",
+                abstract: 'Comprehensive software architecture for AUV systems: real-time control, navigation, object detection, and sensor fusion.',
+                authors: ['D Singh','K Masood','N Jamshed','Y Farooq','Yusuf Hasan','H Ahmad'],
+                venue: 'IEEE PIECON 2023', year: '2023',
                 doi: '10.1109/PIECON56912.2023.10085802',
-                keywords: ['Autonomous Underwater Vehicles', 'Software Architecture', 'Robotics', 'Control Systems'],
-                methodology: 'Designed modular software stack with real-time control, navigation, and communication subsystems for AUV operations.',
-                results: 'Successfully implemented and tested comprehensive AUV software enabling autonomous underwater missions.',
-                impact: 'Cited 2 times, contributing to advancement of underwater robotics and autonomous systems.',
+                keywords: ['AUV','Software Architecture','Robotics','Control Systems'],
+                methodology: 'Modular ROS-based software stack with real-time detection, depth control, and IMU fusion.',
+                results: 'Successfully deployed at national AUV competition; stable autonomous missions.',
+                impact: '2 citations.',
                 citations: 2
             },
             'microcrack-detection': {
                 title: 'MCMN Deep Learning Model for Precise Microcrack Detection in Various Materials',
-                abstract: 'Advanced deep learning model utilizing computer vision techniques for precise detection of microcracks across diverse material types, enabling early damage assessment.',
-                authors: ['F Moreh', 'Yusuf Hasan', 'Zarghaam Rizvi', 'Frank Wuttke', 'Sven Tomforde'],
-                venue: 'IEEE International Conference on Machine Learning and Applications (ICMLA)',
-                year: '2024',
+                abstract: 'MicroCracksMetaNet50E — a SAM-inspired deep learning model with novel decoder for multi-material microcrack detection.',
+                authors: ['F Moreh','Yusuf Hasan','Zarghaam Rizvi','Frank Wuttke','Sven Tomforde'],
+                venue: 'IEEE ICMLA 2024', year: '2024',
                 doi: 'https://doi.org/10.1109/ICMLA61862.2024.00297',
-                keywords: ['Deep Learning', 'Computer Vision', 'Microcrack Detection', 'Materials Science'],
-                methodology: 'Developed Multi-Channel Microcrack Network (MCMN) using advanced CNN architectures for high-precision crack detection.',
-                results: 'Achieved state-of-the-art performance in microcrack detection across multiple material types with high precision.',
-                impact: 'Cited 1 time, advancing non-destructive testing and materials characterization fields.',
+                keywords: ['Deep Learning','Computer Vision','Microcrack Detection','Materials Science'],
+                methodology: 'Multi-Channel Microcrack Network inspired by Meta\'s SAM; novel decoder head for high-precision detection.',
+                results: 'State-of-the-art performance across multiple material types.',
+                impact: '1 citation.',
                 citations: 1
             },
             'wave-neural-network': {
-                title: 'Wave-Based Neural Network with Attention Mechanism for Damage Localization in Materials',
-                abstract: 'Novel neural network architecture incorporating wave propagation analysis with attention mechanisms for precise damage localization in structural materials.',
-                authors: ['F Moreh', 'Yusuf Hasan', 'Zarghaam Rizvi', 'Frank Wuttke', 'Sven Tomforde'],
-                venue: 'IEEE International Conference on Machine Learning and Applications (ICMLA)',
-                year: '2024',
+                title: 'Wave-Based Neural Network with Attention Mechanism for Damage Localization',
+                abstract: 'Attention-driven wave propagation neural network for precise structural damage localisation with reduced model complexity.',
+                authors: ['F Moreh','Yusuf Hasan','Zarghaam Rizvi','Frank Wuttke','Sven Tomforde'],
+                venue: 'IEEE ICMLA 2024', year: '2024',
                 doi: 'https://doi.org/10.1109/ICMLA61862.2024.00023',
-                keywords: ['Wave Analysis', 'Attention Mechanism', 'Neural Networks', 'Damage Localization'],
-                methodology: 'Combined wave propagation physics with attention-based neural networks for enhanced damage detection accuracy.',
-                results: 'Demonstrated superior performance in localizing damage using wave-based analysis integrated with deep learning.',
-                impact: 'Cited 1 time, contributing to integration of physics-based modeling with machine learning.',
+                keywords: ['Wave Analysis','Attention Mechanism','Neural Networks','Damage Localisation'],
+                methodology: 'Physics-informed attention over wave propagation features for enhanced spatial localisation.',
+                results: 'Competitive localisation accuracy with significantly reduced parameter count.',
+                impact: '1 citation.',
                 citations: 1
             },
             'underwater-enhancement': {
-                title: 'Real-time Underwater Video Feed Enhancement for Autonomous Underwater Vehicles (AUV)',
-                abstract: 'Real-time video enhancement techniques specifically designed for autonomous underwater vehicles, addressing challenges of underwater image processing and visibility improvement.',
-                authors: ['Yusuf Hasan', 'A Ali'],
-                venue: 'SPIE Conference on Multimodal Image Exploitation and Learning',
-                year: '2024',
+                title: 'Real-time Underwater Video Feed Enhancement for Autonomous Underwater Vehicles',
+                abstract: 'GAN-based real-time underwater video enhancement combined with YOLOv8 detection — addresses turbidity and visibility degradation in marine environments.',
+                authors: ['Yusuf Hasan','A Ali'],
+                venue: 'SPIE Defense + Commercial Sensing 2024', year: '2024',
                 doi: 'https://doi.org/10.1117/12.3013661',
-                keywords: ['Underwater Imaging', 'Video Enhancement', 'Real-time Processing', 'Computer Vision'],
-                methodology: 'Developed real-time algorithms for underwater video enhancement including noise reduction, color correction, and visibility improvement.',
-                results: 'Successfully implemented real-time enhancement achieving significant improvement in underwater video quality for AUV operations.',
-                impact: 'Cited 1 time, advancing underwater robotics and marine exploration capabilities.',
+                keywords: ['Underwater Imaging','Video Enhancement','Computer Vision','AUV'],
+                methodology: 'CycleGAN-based image enhancement pipeline followed by YOLOv8 fine-tuning on enhanced frames.',
+                results: '+15% precision and F1-score on underwater object detection.',
+                impact: '1 citation.',
                 citations: 1
             },
             'microcrack-attention': {
-                title: 'MicrocrackAttentionNext: Advancing Microcrack Detection in Wave Field Analysis Using Deep Neural Networks Through Feature Visualization',
-                abstract: 'Advanced microcrack detection system using deep neural networks with sophisticated feature visualization techniques for wave field analysis applications.',
-                authors: ['F Moreh', 'Yusuf Hasan', 'B Zahid Hussain', 'M Ammar', 'Frank Wuttke', 'Sven Tomforde'],
-                venue: 'Sensors Journal',
-                year: '2025',
+                title: 'MicroCrackAttentionNeXt: Advancing Microcrack Detection in Wave Field Analysis Using Deep Neural Networks Through Feature Visualization',
+                abstract: 'Adaptive Feature Reuse Block for crack-size-aware detection with interpretable attention visualisation in wave field analysis.',
+                authors: ['F Moreh','Yusuf Hasan','B Zahid Hussain','M Ammar','Frank Wuttke','Sven Tomforde'],
+                venue: 'MDPI Sensors 2025', year: '2025',
                 doi: 'https://doi.org/10.3390/s25072107',
-                keywords: ['Microcrack Detection', 'Feature Visualization', 'Wave Field Analysis', 'Deep Learning'],
-                methodology: 'Implemented attention-based neural networks with advanced feature visualization for enhanced microcrack detection in wave fields.',
-                results: 'Achieved state-of-the-art performance in microcrack detection with interpretable feature visualization capabilities.',
-                impact: 'Recently published, contributing to advancement of interpretable AI in materials science.',
-                citations: 'New Publication'
+                keywords: ['Microcrack Detection','Feature Visualisation','Attention','Wave Fields'],
+                methodology: 'Attention-based DNN with Adaptive Feature Reuse Block; Grad-CAM feature visualisation.',
+                results: 'State-of-the-art microcrack detection with interpretable visual explanations.',
+                impact: 'New publication.',
+                citations: 'New'
             },
             'keypoint-localization': {
                 title: 'Deep Learning for Micro-Scale Crack Detection on Imbalanced Datasets Using Key Point Localization',
-                abstract: 'Novel approach addressing the challenge of micro-scale crack detection on imbalanced datasets through innovative key point localization techniques and deep learning.',
-                authors: ['F Moreh', 'Yusuf Hasan', 'B Zahid Hussain', 'M Ammar', 'Sven Tomforde'],
-                venue: 'arXiv Preprint',
-                year: '2024',
+                abstract: 'Key-point localisation framework specifically designed for heavily imbalanced micro-crack detection datasets.',
+                authors: ['F Moreh','Yusuf Hasan','B Zahid Hussain','M Ammar','Sven Tomforde'],
+                venue: 'arXiv Preprint', year: '2024',
                 doi: 'https://doi.org/10.48550/arXiv.2411.10389',
-                keywords: ['Deep Learning', 'Imbalanced Datasets', 'Key Point Localization', 'Crack Detection'],
-                methodology: 'Developed key point localization framework specifically designed for handling imbalanced datasets in micro-crack detection.',
-                results: 'Demonstrated effective handling of dataset imbalance while maintaining high accuracy in micro-scale crack detection.',
-                impact: 'Under review, addressing critical challenges in real-world crack detection applications.',
+                keywords: ['Deep Learning','Imbalanced Datasets','Key Point Localisation','Crack Detection'],
+                methodology: 'Heatmap-based keypoint detection with class-balanced sampling and focal-loss variants.',
+                results: 'Effective crack detection despite severe dataset imbalance.',
+                impact: 'Under review.',
                 citations: 'Under Review'
             }
         };
-        return research[researchId] || {};
+        return r[id] || {};
     }
 
-    getJourneyData(journeyId) {
-        const journey = {
-            'education': {
-                title: 'B.Tech Computer Engineering',
-                institution: 'Zakir Husain College of Engineering and Technology, AMU',
-                duration: '2021 - 2025',
-                description: 'Pursuing Bachelor\'s degree in Computer Engineering with comprehensive coursework in software development, algorithms, and system design.',
-                coursework: [
-                    'Data Structures and Algorithms',
-                    'Object-Oriented Programming',
-                    'Database Management Systems',
-                    'Computer Networks',
-                    'Operating Systems',
-                    'Software Engineering',
-                    'Machine Learning',
-                    'Artificial Intelligence'
-                ],
-                achievements: [
-                    'CGPA: 9.2/10',
-                    'Dean\'s List for 4 consecutive semesters',
-                    'Best Project Award for Final Year Project',
-                    'Active member of Computer Science Society'
-                ],
-                skills: 'Advanced programming skills in multiple languages, strong foundation in computer science fundamentals, and practical experience through projects.'
-            },
-            'iit-jodhpur': {
-                title: 'Research Intern - Indian Institute of Technology Jodhpur',
-                institution: 'IIT Jodhpur',
-                duration: 'June 2024 - July 2024',
-                description: 'Intensive research internship focusing on cutting-edge computer science and engineering projects.',
-                projects: [
-                    'Advanced Machine Learning algorithms research',
-                    'Development of novel optimization techniques',
-                    'Collaboration with PhD students and faculty',
-                    'Publication preparation for international conferences'
-                ],
-                mentors: ['Dr. Research Supervisor', 'Senior PhD Students'],
-                outcomes: [
-                    'Contributed to 2 research papers',
-                    'Developed new algorithm with 15% performance improvement',
-                    'Presented findings at internal symposium',
-                    'Gained expertise in advanced research methodologies'
-                ],
-                skills: 'Research methodology, advanced algorithms, academic writing, data analysis, and collaborative research.'
-            },
-            'waterloo': {
-                title: 'AI/ML Intern',
-                institution: '',
-                duration: 'June 2023 - Feb 2025',
-                description: 'Micro Crack Detection',
-                projects: [
-                    'Conducted research and development on neural network-based crack detection systems for infrastructure monitoring Implemented and evaluated multiple deep learning architectures including Hyper Convolutional Neural Networks and Transformer models and state-of-the-art computer vision models including Meta Segment Anything Model (SAM) Delivered comprehensive analysis and recommendations for optimal crack detection methodologies',
-                    
-                ],
-                // achievements: [
-                //     'Collaborated with world-renowned researchers',
-                //     'Co-authored 3 international publications',
-                //     'Developed innovative solutions for industry problems',
-                //     'Received excellence award for research contribution'
-                // ],
-                // experience: 'Gained invaluable international research experience, worked with diverse teams, and contributed to groundbreaking research in computing.',
-                // skills: 'International collaboration, advanced research techniques, cross-cultural communication, and innovation.'
-            },
-            'buckingham': {
-            title: 'Research Intern - University of Buckingham',
-            institution: 'University of Buckingham, United Kingdom',
-            duration: 'March - May 2023',
-            description: 'Underwater video feed enhancement using deep learning models, focusing on improving detection performance in low-visibility aquatic environments.',
-            focus: [
-                'Generative Adversarial Networks (GANs) for image enhancement',
-                'CycleGAN and unpaired training for real-world underwater data',
-                'Image quality restoration for downstream object detection tasks',
-                'Empirical benchmarking of enhancement vs detection accuracy'
-            ],
-            achievements: [
-                'Deployed GAN-based image enhancement pipeline for underwater vision',
-                'Improved object detection accuracy by 15% over baseline',
-                'Worked with limited and noisy datasets typical of marine environments',
-                'Strengthened understanding of GAN loss functions like Minimax and cycle-consistency'
-            ],
-            impact: 'This internship solidified my interest in deep learning, offering practical exposure to applying GANs for image enhancement under real-world constraints and refining vision systems for autonomous robotics.',
-            skills: 'Image enhancement using GANs, domain adaptation, unpaired learning, and performance-driven computer vision.'
-        }
-
-
-
-            
-            // 'buckingham': {
-            //     title: 'International Intern - University of Buckingham',
-            //     institution: 'University of Buckingham, United Kingdom',
-            //     duration: 'March - May 2023',
-            //     description: 'International academic and research exposure through collaboration with UK-based research teams.',
-            //     focus: [
-            //         'European research methodologies',
-            //         'International academic standards',
-            //         'Cross-cultural research collaboration',
-            //         'Global perspective on technology trends'
-            //     ],
-            //     achievements: [
-            //         'Completed intensive research training program',
-            //         'Collaborated with international student community',
-            //         'Gained exposure to European academic culture',
-            //         'Developed global network of academic contacts'
-            //     ],
-            //     impact: 'This experience broadened my global perspective on research and technology, providing valuable insights into international academic standards.',
-            //     skills: 'International research standards, cultural adaptability, global networking, and cross-cultural communication.'
-            // }
+    getCertificateData(id) {
+        const c = {
+            'ml-cert':       { title: 'Machine Learning Certification', issuer: 'Coursera – Stanford University', date: '2024', description: 'Supervised/unsupervised learning, neural networks, and practical applications.', skills: ['ML Algorithms','Python','Data Analysis','Statistics'], credentialId: 'ML-CERT-2024-001' },
+            'dl-cert':       { title: 'Deep Learning Specialization',   issuer: 'Coursera – deeplearning.ai',    date: '2024', description: 'CNNs, RNNs, sequence models, and GANs.',                               skills: ['Deep Learning','TensorFlow','CNNs','NLP'],              credentialId: 'DL-SPEC-2024-002' },
+            'research-award':{ title: 'Best Research Paper Award',       issuer: 'IEEE Conference 2024',          date: '2024', description: 'Recognition for neural network anomaly detection research.',             skills: ['Research','Technical Writing','Innovation'],            credentialId: 'IEEE-AWARD-2024' },
+            'robotics-cert': { title: 'Robotics & Automation Certificate',issuer: 'IIT Jodhpur',                 date: '2024', description: 'Robotics systems, automation, and control theory.',                     skills: ['Robotics','Automation','Control Theory'],               credentialId: 'IITJ-ROB-2024' }
         };
-        return journey[journeyId] || {};
+        return c[id] || {};
     }
 
-    getContactData(contactId) {
-        const contacts = {
-            'email': {
-                type: 'Email',
-                value: 'yusufhasan1209@gmail.com',
-                description: 'Primary email for professional communications other  Email ID: yusufhasan@zhcet.ac.in',
-                action: 'mailto:your.yusufhasan1209@gmail.com',
-                tips: 'Best for detailed discussions, project inquiries, and professional correspondence.'
-            },
-            'phone': {
-                type: 'Phone',
-                value: '+91 8979159476',
-                description: 'Direct phone number for urgent matters',
-                action: 'tel:+918979159476',
-                tips: 'Available during business hours (9 AM - 6 PM IST) for urgent discussions.'
-            },
-            'location': {
-                type: 'Location',
-                value: 'Aligarh, Uttar Pradesh, India',
-                description: 'Current location and base for in-person meetings',
-                action: 'https://maps.app.goo.gl/hh8acN52V7xn3ZQN6',
-                tips: 'Open to in-person meetings in the Delhi NCR region and Aligarh area.'
-            },
-            'github': {
-                type: 'GitHub',
-                value: 'https://github.com/hasanyusuf01',
-                description: 'Code repositories and open source contributions',
-                action: 'https://github.com/hasanyusuf01',
-                tips: 'Check out my latest projects, contributions, and code samples.'
-            },
-            'linkedin': {
-                type: 'LinkedIn',
-                value: 'https://www.linkedin.com/in/yusufhasan16/',
-                description: 'Professional networking and career updates',
-                action: 'https://www.linkedin.com/in/yusufhasan16/',
-                tips: 'Connect for professional networking, career opportunities, and industry insights.'
-            },
-            'instagram': {
-                type: 'Instagram',
-                value: '',
-                description: 'Personal updates and behind-the-scenes content',
-                action: 'https://instagram.com/',
-                tips: 'Follow for personal updates, travel experiences, and life insights.'
-            }
+    /* ═══════════════════════════════════════════
+       MODAL TEMPLATES
+    ═══════════════════════════════════════════ */
+    _projectContent(p) {
+        return `<div class="modal-project">
+            <h2>${p.title || 'Project'}</h2>
+            <p style="color:var(--text-secondary);margin-bottom:1.5rem">${p.description || ''}</p>
+            <div class="modal-section"><h3><i class="fas "></i> Technologies</h3>
+                <div class="tech-grid">${(p.technologies||[]).map(t=>`<span class="tech-badge">${t}</span>`).join('')}</div></div>
+            <div class="modal-section"><h3><i class="fas "></i> Key Features</h3>
+                <ul class="features-list">${(p.features||[]).map(f=>`<li>${f}</li>`).join('')}</ul></div>
+            <div class="modal-links">
+                ${p.github?`<a href="${p.github}" target="_blank" class="modal-link"><i class="fab fa-github"></i> View Code</a>`:''}
+            </div></div>`;
+    }
+
+    _researchContent(r) {
+        return `<div class="modal-research">
+            <h2>${r.title||'Research'}</h2>
+            <div class="research-meta">
+                <p><strong>Authors:</strong> ${(r.authors||[]).join(', ')}</p>
+                <p><strong>Published:</strong> ${r.venue} (${r.year})</p>
+                <p><strong>Citations:</strong> ${r.citations}</p>
+                ${r.doi?`<p><strong>DOI:</strong> <a href="${r.doi}" target="_blank" style="color:var(--primary-color)">${r.doi}</a></p>`:''}
+            </div>
+  
+                ${r.doi?`<a href="${r.doi.startsWith('http')?r.doi:'https://doi.org/'+r.doi}" target="_blank" class="modal-link"><i class="fas fa-external-link-alt"></i> View Paper</a>`:''}
+            </div></div>`;
+    }
+
+    _journeyContent(j) {
+        const block = (title, icon, items, type='list') => {
+            if (!items || !items.length) return '';
+            const inner = type === 'list'
+                ? `<ul class="features-list">${items.map(i=>`<li>${i}</li>`).join('')}</ul>`
+                : `<p>${items}</p>`;
+            return `<div class="modal-section"><h3><i class="fas fa-${icon}"></i> ${title}</h3>${inner}</div>`;
         };
-        return contacts[contactId] || {};
-    }
-
-    createProjectModalContent(project) {
-        return `
-            <div class="modal-project">
-                <h2>${project.title}</h2>
-                <p class="project-description">${project.description}</p>
-                
-                <div class="modal-section">
-                    <h3><i class="fas fa-cogs"></i> Technologies Used</h3>
-                    <div class="tech-grid">
-                        ${project.technologies?.map(tech => `<span class="tech-badge">${tech}</span>`).join('') || ''}
-                    </div>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-star"></i> Key Features</h3>
-                    <ul class="features-list">
-                        ${project.features?.map(feature => `<li>${feature}</li>`).join('') || ''}
-                    </ul>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-exclamation-triangle"></i> Challenges</h3>
-                    <p>${project.challenges || 'No specific challenges mentioned.'}</p>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-trophy"></i> Outcome</h3>
-                    <p>${project.outcome || 'Project completed successfully.'}</p>
-                </div>
-
-                <div class="modal-links">
-                    ${project.github ? `<a href="${project.github}" target="_blank" class="modal-link"><i class="fab fa-github"></i> View Code</a>` : ''}
-                    ${project.demo ? `<a href="${project.demo}" target="_blank" class="modal-link"><i class="fas fa-external-link-alt"></i> Live Demo</a>` : ''}
-                </div>
+        return `<div class="modal-journey">
+            <h2>${j.title||''}</h2>
+            <div class="journey-meta">
+                <p><strong>Organisation:</strong> ${j.institution||''}</p>
+                <p><strong>Duration:</strong> ${j.duration||''}</p>
+                <p><strong>Type:</strong> ${j.type||''}</p>
             </div>
-        `;
+            <div class="modal-section"><h3><i class="fas fa-info-circle"></i> Overview</h3><p>${j.description||''}</p></div>
+            ${block('Projects & Work', 'project-diagram', j.projects)}
+            ${block('Coursework', 'book', j.coursework)}
+            ${block('Key Achievements', 'trophy', j.achievements)}
+            <div class="modal-section"><h3><i class="fas "></i> Skills</h3><p>${j.skills||''}</p></div>
+            </div>`;
     }
 
-    createResearchModalContent(research) {
-        return `
-            <div class="modal-research">
-                <h2>${research.title}</h2>
-                <div class="research-meta">
-                    <p><strong>Authors:</strong> ${research.authors?.join(', ') || 'Not specified'}</p>
-                    <p><strong>Published:</strong> ${research.venue} (${research.year})</p>
-                    <p><strong>DOI:</strong> ${research.doi || 'Not available'}</p>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-file-alt"></i> Abstract</h3>
-                    <p>${research.abstract}</p>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-flask"></i> Methodology</h3>
-                    <p>${research.methodology || 'Methodology details not available.'}</p>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-chart-bar"></i> Results</h3>
-                    <p>${research.results || 'Results not specified.'}</p>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-impact"></i> Impact</h3>
-                    <p>${research.impact || 'Impact information not available.'}</p>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-tags"></i> Keywords</h3>
-                    <div class="keywords">
-                        ${research.keywords?.map(keyword => `<span class="keyword-badge">${keyword}</span>`).join('') || ''}
-                    </div>
-                </div>
-
-                <div class="modal-links">
-                    ${research.pdf ? `<a href="${research.pdf}" target="_blank" class="modal-link"><i class="fas fa-file-pdf"></i> Download PDF</a>` : ''}
-                    ${research.doi ? `<a href="https://doi.org/${research.doi}" target="_blank" class="modal-link"><i class="fas fa-external-link-alt"></i> View Online</a>` : ''}
-                </div>
+    _certificateContent(c) {
+        return `<div class="modal-certificate">
+            <h2>${c.title||''}</h2>
+            <div class="certificate-meta">
+                <p><strong>Issued by:</strong> ${c.issuer||''}</p>
+                <p><strong>Date:</strong> ${c.date||''}</p>
+                <p><strong>Credential ID:</strong> ${c.credentialId||''}</p>
             </div>
+            <div class="modal-section"><h3><i class="fas fa-info-circle"></i> Description</h3><p>${c.description||''}</p></div>
+            <div class="modal-section"><h3><i class="fas "></i> Skills</h3>
+                <div class="skills-grid">${(c.skills||[]).map(s=>`<span class="skill-badge">${s}</span>`).join('')}</div>
+            </div></div>`;
+    }
+
+    /* ── Modal CSS injected once ──────────────── */
+    _addModalStyles() {
+        if (document.getElementById('modal-styles')) return;
+        const s = document.createElement('style');
+        s.id = 'modal-styles';
+        s.textContent = `
+            .modal-section { margin:1.5rem 0; padding:1.25rem 1.5rem; background:var(--surface); border-radius:10px; border-left:4px solid var(--primary-color); }
+            .modal-section h3 { color:var(--primary-color); margin-bottom:.75rem; display:flex; align-items:center; gap:.5rem; font-size:1rem; }
+            .tech-grid,.keywords,.skills-grid { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.75rem; }
+            .tech-badge,.keyword-badge,.skill-badge { padding:.35rem .9rem; background:var(--gradient); color:white; border-radius:20px; font-size:.85rem; font-weight:500; }
+            .skill-badge { background:var(--accent-color); }
+            .features-list,.coursework-list,.projects-list,.achievements-list { list-style:none; padding:0; }
+            .features-list li,.projects-list li,.coursework-list li,.achievements-list li { padding:.4rem 0 .4rem 1.3rem; border-bottom:1px solid var(--border); position:relative; font-size:.9rem; }
+            .features-list li::before,.projects-list li::before,.coursework-list li::before,.achievements-list li::before { content:'•'; color:var(--primary-color); font-weight:bold; position:absolute; left:0; }
+            .modal-links { display:flex; gap:1rem; margin-top:2rem; flex-wrap:wrap; }
+            .modal-link { padding:.7rem 1.4rem; background:var(--gradient); color:white; text-decoration:none; border-radius:8px; display:flex; align-items:center; gap:.5rem; font-weight:500; transition:all .3s; }
+            .modal-link:hover { transform:translateY(-2px); box-shadow:0 8px 20px var(--shadow); }
+            .research-meta,.journey-meta,.certificate-meta { background:var(--surface); padding:1rem 1.25rem; border-radius:8px; margin:1rem 0; }
+            .research-meta p,.journey-meta p,.certificate-meta p { margin:.3rem 0; font-size:.9rem; }
+            @media(max-width:768px){ .modal-links { flex-direction:column; } .modal-link { justify-content:center; } }
         `;
-    }
-
-    createJourneyModalContent(journey) {
-        return `
-            <div class="modal-journey">
-                <h2>${journey.title}</h2>
-                <div class="journey-meta">
-                    <p><strong>Institution:</strong> ${journey.institution}</p>
-                    <p><strong>Duration:</strong> ${journey.duration}</p>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-info-circle"></i> Description</h3>
-                    <p>${journey.description}</p>
-                </div>
-
-                ${journey.coursework ? `
-                    <div class="modal-section">
-                        <h3><i class="fas fa-book"></i> Coursework</h3>
-                        <ul class="coursework-list">
-                            ${journey.coursework.map(course => `<li>${course}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-
-                ${journey.projects ? `
-                    <div class="modal-section">
-                        <h3><i class="fas fa-project-diagram"></i> Projects</h3>
-                        <ul class="projects-list">
-                            ${journey.projects.map(project => `<li>${project}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-
-                ${journey.achievements ? `
-                    <div class="modal-section">
-                        <h3><i class="fas fa-trophy"></i> Achievements</h3>
-                        <ul class="achievements-list">
-                            ${journey.achievements.map(achievement => `<li>${achievement}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-
-                ${journey.outcomes ? `
-                    <div class="modal-section">
-                        <h3><i class="fas fa-bullseye"></i> Outcomes</h3>
-                        <ul class="outcomes-list">
-                            ${journey.outcomes.map(outcome => `<li>${outcome}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-cogs"></i> Skills Gained</h3>
-                    <p>${journey.skills}</p>
-                </div>
-            </div>
-        `;
-    }
-
-    createContactModalContent(contact) {
-        return `
-            <div class="modal-contact">
-                <h2>${contact.type}</h2>
-                <div class="contact-value">
-                    <h3>${contact.value}</h3>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-info-circle"></i> Description</h3>
-                    <p>${contact.description}</p>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-lightbulb"></i> Tips</h3>
-                    <p>${contact.tips}</p>
-                </div>
-
-                <div class="modal-links">
-                    <a href="${contact.action}" target="_blank" class="modal-link contact-action">
-                        <i class="fas fa-external-link-alt"></i> Get in Touch
-                    </a>
-                </div>
-            </div>
-        `;
-    }
-
-    getCertificateData(certificateId) {
-        const certificates = {
-            'ml-cert': {
-                title: 'Machine Learning Certification',
-                issuer: 'Coursera - Stanford University',
-                date: '2024',
-                description: 'Comprehensive machine learning certification covering supervised and unsupervised learning, neural networks, and practical applications.',
-                skills: ['Machine Learning Algorithms', 'Python Programming', 'Data Analysis', 'Statistical Methods'],
-                credentialId: 'ML-CERT-2024-001',
-                verificationUrl: 'https://coursera.org/verify/ml-cert',
-                image: 'certificates/ml-cert.jpg'
-            },
-            'dl-cert': {
-                title: 'Deep Learning Specialization',
-                issuer: 'Coursera - deeplearning.ai',
-                date: '2024',
-                description: 'Advanced deep learning specialization covering neural networks, convolutional networks, sequence models, and generative adversarial networks.',
-                skills: ['Deep Learning', 'Neural Networks', 'TensorFlow', 'Computer Vision', 'NLP'],
-                credentialId: 'DL-SPEC-2024-002',
-                verificationUrl: 'https://coursera.org/verify/dl-spec',
-                image: 'certificates/dl-cert.jpg'
-            },
-            'research-award': {
-                title: 'Best Research Paper Award',
-                issuer: 'IEEE Conference 2024',
-                date: '2024',
-                description: 'Recognition for outstanding research contribution in neural network-based anomaly detection for network security applications.',
-                skills: ['Research Excellence', 'Technical Writing', 'Innovation', 'Presentation Skills'],
-                credentialId: 'IEEE-AWARD-2024-003',
-                verificationUrl: 'https://ieee.org/verify/award',
-                image: 'certificates/research-award.jpg'
-            },
-            'internship-cert': {
-                title: 'Research Internship Certificate',
-                issuer: 'University of Waterloo',
-                date: '2023-2025',
-                description: 'Completion of extended research internship focusing on advanced computing technologies and machine learning applications.',
-                skills: ['Research Methodology', 'Academic Collaboration', 'Advanced Computing', 'International Experience'],
-                credentialId: 'UW-INTERN-2023-004',
-                verificationUrl: 'https://uwaterloo.ca/verify/internship',
-                image: 'certificates/internship-cert.jpg'
-            },
-            'programming-cert': {
-                title: 'Advanced Programming Certificate',
-                issuer: 'HackerRank',
-                date: '2023',
-                description: 'Demonstrated proficiency in advanced programming concepts, algorithms, and data structures through comprehensive assessments.',
-                skills: ['Advanced Programming', 'Algorithms', 'Data Structures', 'Problem Solving'],
-                credentialId: 'HR-PROG-2023-005',
-                verificationUrl: 'https://hackerrank.com/verify/programming',
-                image: 'certificates/programming-cert.jpg'
-            },
-            'robotics-cert': {
-                title: 'Robotics & Automation Certificate',
-                issuer: 'IIT Jodhpur',
-                date: '2024',
-                description: 'Comprehensive training in robotics systems, automation technologies, and control algorithms during research internship.',
-                skills: ['Robotics Control', 'Automation Systems', 'Control Theory', 'Embedded Systems'],
-                credentialId: 'IITJ-ROB-2024-006',
-                verificationUrl: 'https://iitj.ac.in/verify/robotics',
-                image: 'certificates/robotics-cert.jpg'
-            }
-        };
-        return certificates[certificateId] || {};
-    }
-
-    createCertificateModalContent(certificate) {
-        return `
-            <div class="modal-certificate">
-                <h2>${certificate.title}</h2>
-                <div class="certificate-meta">
-                    <p><strong>Issued by:</strong> ${certificate.issuer}</p>
-                    <p><strong>Date:</strong> ${certificate.date}</p>
-                    <p><strong>Credential ID:</strong> ${certificate.credentialId}</p>
-                </div>
-
-                <div class="certificate-display">
-                    <div class="certificate-image-placeholder">
-                        <i class="fas fa-certificate fa-5x"></i>
-                        <p>Certificate Preview</p>
-                        <small>Actual certificate image would be displayed here</small>
-                    </div>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-info-circle"></i> Description</h3>
-                    <p>${certificate.description}</p>
-                </div>
-
-                <div class="modal-section">
-                    <h3><i class="fas fa-cogs"></i> Skills Demonstrated</h3>
-                    <div class="skills-grid">
-                        ${certificate.skills?.map(skill => `<span class="skill-badge">${skill}</span>`).join('') || ''}
-                    </div>
-                </div>
-
-                <div class="modal-links">
-                    ${certificate.verificationUrl ? `<a href="${certificate.verificationUrl}" target="_blank" class="modal-link"><i class="fas fa-check-circle"></i> Verify Certificate</a>` : ''}
-                    <button onclick="downloadCertificate('${certificate.title}')" class="modal-link download-cert">
-                        <i class="fas fa-download"></i> Download Certificate
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    openModal(content) {
-        const modalOverlay = document.getElementById('modalOverlay');
-        const modalBody = document.getElementById('modalBody');
-        
-        modalBody.innerHTML = content;
-        modalOverlay.classList.add('active');
-        document.body.classList.add('modal-active');
-        
-        // Add modal-specific styles
-        this.addModalStyles();
-    }
-
-    closeModal() {
-        const modalOverlay = document.getElementById('modalOverlay');
-        modalOverlay.classList.remove('active');
-        document.body.classList.remove('modal-active');
-    }
-
-    addModalStyles() {
-        if (!document.getElementById('modal-styles')) {
-            const style = document.createElement('style');
-            style.id = 'modal-styles';
-            style.textContent = `
-                .modal-project, .modal-research, .modal-journey, .modal-contact {
-                    max-width: 800px;
-                }
-
-                .modal-section {
-                    margin: 2rem 0;
-                    padding: 1.5rem;
-                    background: var(--surface);
-                    border-radius: 8px;
-                    border-left: 4px solid var(--primary-color);
-                }
-
-                .modal-section h3 {
-                    color: var(--primary-color);
-                    margin-bottom: 1rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                }
-
-                .tech-grid, .keywords {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 0.5rem;
-                    margin-top: 1rem;
-                }
-
-                .tech-badge, .keyword-badge {
-                    padding: 0.5rem 1rem;
-                    background: var(--gradient);
-                    color: white;
-                    border-radius: 20px;
-                    font-size: 0.9rem;
-                    font-weight: 500;
-                }
-
-                .features-list, .coursework-list, .projects-list, .achievements-list, .outcomes-list {
-                    list-style: none;
-                    padding: 0;
-                }
-
-                .features-list li, .coursework-list li, .projects-list li, .achievements-list li, .outcomes-list li {
-                    padding: 0.5rem 0;
-                    border-bottom: 1px solid var(--border);
-                    position: relative;
-                    padding-left: 1.5rem;
-                }
-
-                .features-list li::before, .coursework-list li::before, .projects-list li::before, .achievements-list li::before, .outcomes-list li::before {
-                    content: '•';
-                    color: var(--primary-color);
-                    font-weight: bold;
-                    position: absolute;
-                    left: 0;
-                }
-
-                .modal-links {
-                    display: flex;
-                    gap: 1rem;
-                    margin-top: 2rem;
-                    flex-wrap: wrap;
-                }
-
-                .modal-link {
-                    padding: 0.75rem 1.5rem;
-                    background: var(--gradient);
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 8px;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    transition: all 0.3s ease;
-                    font-weight: 500;
-                }
-
-                .modal-link:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 20px var(--shadow);
-                }
-
-                .research-meta, .journey-meta {
-                    background: var(--surface);
-                    padding: 1rem;
-                    border-radius: 8px;
-                    margin: 1rem 0;
-                }
-
-                .contact-value {
-                    text-align: center;
-                    padding: 2rem;
-                    background: var(--gradient);
-                    color: white;
-                    border-radius: 8px;
-                    margin: 1rem 0;
-                }
-
-                .contact-action {
-                    background: var(--primary-color) !important;
-                    justify-content: center;
-                    width: 100%;
-                }
-
-                @media (max-width: 768px) {
-                    .modal-links {
-                        flex-direction: column;
-                    }
-                    
-                    .modal-link {
-                        justify-content: center;
-                    }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-    }
-
-    setupSmoothScrolling() {
-        // Smooth scrolling for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-    }
-
-    observeElements() {
-        // Intersection Observer for animations
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('fade-in');
-                }
-            });
-        }, { threshold: 0.1 });
-
-        // Observe all cards and timeline items
-        document.querySelectorAll('.project-card, .research-card, .timeline-item, .contact-card').forEach(el => {
-            observer.observe(el);
-        });
+        document.head.appendChild(s);
     }
 }
 
-// Resume download functionality
-function downloadResume() {
-    // Create a link element and trigger download
-    const link = document.createElement('a');
-    link.href = 'resume.pdf';
-    link.download = 'Yusuf_Hasan_Resume.pdf';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Show success message
-    showNotification('Resume download started!', 'success');
-}
+/* ═══════════════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => { new Portfolio(); });
 
-// View certificates functionality
-function viewCertificates() {
-    // Create portfolio instance to access showSection method
-    const portfolio = new Portfolio();
-    portfolio.showSection('certificates');
-    
-    // Update navigation
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('data-section') === 'certificates') {
-            link.classList.add('active');
-        }
-    });
-    
-    // Show success message
-    showNotification('Viewing certificates section!', 'info');
-}
-
-// Download certificate functionality
-function downloadCertificate(certificateTitle) {
-    // In a real application, this would download the actual certificate
-    showNotification(`${certificateTitle} download would start here. Contact for actual certificate files.`, 'info');
-}
-
-// Notification system
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    
-    const style = `
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        background: var(--gradient);
-        color: white;
-        padding: 1rem 2rem;
-        border-radius: 8px;
-        box-shadow: 0 8px 20px var(--shadow);
-        z-index: 3000;
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
-    `;
-    
-    notification.style.cssText = style;
-    document.body.appendChild(notification);
-    
-    // Animate in
-    setTimeout(() => {
-        notification.style.transform = 'translateX(0)';
-    }, 100);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            document.body.removeChild(notification);
-        }, 300);
-    }, 3000);
-}
-
-// Initialize the portfolio when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new Portfolio();
-});
-
-// Handle window resize
 window.addEventListener('resize', () => {
-    // Close mobile menu on resize
-    const hamburger = document.querySelector('.hamburger');
-    const navMenu = document.querySelector('.nav-menu');
-    
+    const hb = document.querySelector('.hamburger');
+    const nm = document.querySelector('.nav-menu');
     if (window.innerWidth > 768) {
-        hamburger.classList.remove('active');
-        navMenu.classList.remove('active');
+        hb.classList.remove('active');
+        nm.classList.remove('active');
     }
 });
